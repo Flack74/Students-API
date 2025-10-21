@@ -43,4 +43,4 @@ coverage.out
 
 # Database file
 storage
-config
+/config
