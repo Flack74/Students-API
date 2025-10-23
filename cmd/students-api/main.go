@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Flack74/Students-API/internal/config"
+	"github.com/Flack74/Students-API/internal/http/handlers/student"
 )
 
 func main() {
@@ -20,9 +21,7 @@ func main() {
 	// Setup router
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("welcome to students api"))
-	})
+	router.HandleFunc("POST /api/students", student.New())
 	// Setup server
 	server := http.Server{
 		Addr:    cfg.Addr,
