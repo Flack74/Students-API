@@ -12,16 +12,25 @@ import (
 
 	"github.com/Flack74/Students-API/internal/config"
 	"github.com/Flack74/Students-API/internal/http/handlers/student"
+	"github.com/Flack74/Students-API/internal/storage/sqlite"
 )
 
 func main() {
 	// Load config
 	cfg := config.MustLoad()
 	// Database setup
+
+	storage, err := sqlite.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	slog.Info("storage initialized", slog.String("env", cfg.Env), slog.String("version", "1.0.0"))
+
 	// Setup router
 	router := http.NewServeMux()
 
-	router.HandleFunc("POST /api/students", student.New())
+	router.HandleFunc("POST /api/students", student.New(storage))
 	// Setup server
 	server := http.Server{
 		Addr:    cfg.Addr,
