@@ -81,7 +81,6 @@ Students-API/
 ├── go.mod
 ├── go.sum
 ├── README.md
-└── IMPROVEMENTS.md              # Future enhancements
 ```
 
 ### 🏗️ Architecture Layers
