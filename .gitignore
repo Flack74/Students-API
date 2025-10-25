@@ -42,5 +42,9 @@ coverage.out
 .env.local
 
 # Database file
-/storage
-/config
+/storage/
+
+# Config files (keep example.yaml)
+config/local.yaml
+config/*.yaml
+!config/example.yaml

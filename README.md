@@ -118,8 +118,11 @@ Students-API/
 
 3. **Create configuration file**
    ```bash
-   # config/local.yaml already exists with default settings
-   cat config/local.yaml
+   # Copy example config to local config
+   cp config/example.yaml config/local.yaml
+   
+   # Edit config/local.yaml with your settings
+   # Note: config/local.yaml is gitignored and won't be committed
    ```
 
 4. **Run the application**
@@ -146,15 +149,28 @@ docker run -p 8082:8082 students-api
 
 ## ⚙️ Configuration
 
-Configuration is managed via YAML files. Create a config file with the following structure:
+Configuration is managed via YAML files.
 
-```yaml
-# config/local.yaml
-env: "dev"                          # Environment: dev, staging, prod
-storage_path: "storage/storage.db"  # SQLite database path
-http_server:
-  address: "localhost:8082"         # Server address
-```
+### Setup Configuration
+
+1. **Copy the example config:**
+   ```bash
+   cp config/example.yaml config/local.yaml
+   ```
+
+2. **Edit `config/local.yaml` with your settings:**
+   ```yaml
+   env: "dev"                          # Environment: dev, staging, prod
+   storage_path: "storage/storage.db"  # SQLite database path
+   http_server:
+     address: "localhost:8082"         # Server address
+   ```
+
+### Important Notes
+
+- ✅ `config/example.yaml` - Template file (committed to git)
+- ❌ `config/local.yaml` - Your local config (gitignored, not committed)
+- 🔒 Never commit `config/local.yaml` with sensitive data
 
 ### Environment Variables
 
@@ -163,6 +179,14 @@ You can override config file location using:
 ```bash
 export Config_Path=/path/to/config.yaml
 ```
+
+### Configuration Options
+
+| Option | Description | Example |
+|--------|-------------|----------|
+| `env` | Environment name | `dev`, `staging`, `prod` |
+| `storage_path` | SQLite database file path | `storage/storage.db` |
+| `http_server.address` | Server bind address | `localhost:8082` |
 
 ## 📚 API Documentation
 
