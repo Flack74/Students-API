@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"github.com/Flack74/Students-API/internal/config"
 	"github.com/Flack74/Students-API/internal/types"
@@ -108,3 +109,50 @@ func (s *Sqlite) GetStudents() ([]types.Student, error) {
 
 	return students, nil
 }
+
+func (s *Sqlite) DeleteStudentById(id int64) error {
+	stmt, err := s.Db.Prepare("DELETE FROM students WHERE id = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(id)
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func (s *Sqlite) UpdateStudentById(id int64, name string, email string, age int) error {
+	stmt, err := s.Db.Prepare("UPDATE students SET name = ?, email = ?, age = ? WHERE id = ?")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	res, err := stmt.Exec(name, email, age, id)
+	if err != nil {
+		return err
+	}
+
+	// Check the number of affected rows
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Rows affected", "count", rowsAffected)
+
+	return nil
+}
+
+// func (s *Sqlite) PartialUpdateStudentById(id int64) error {
+
+// }
