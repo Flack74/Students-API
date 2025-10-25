@@ -48,3 +48,5 @@ coverage.out
 config/local.yaml
 config/*.yaml
 !config/example.yaml
+
+IMPROVEMENTS.md

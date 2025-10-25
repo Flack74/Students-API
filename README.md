@@ -120,16 +120,15 @@ Students-API/
    ```bash
    # Copy example config to local config
    cp config/example.yaml config/local.yaml
-   
+
    # Edit config/local.yaml with your settings
-   # Note: config/local.yaml is gitignored and won't be committed
    ```
 
 4. **Run the application**
    ```bash
    # Using config file path
    go run cmd/students-api/main.go -config=config/local.yaml
-   
+
    # Or using environment variable
    export Config_Path=config/local.yaml
    go run cmd/students-api/main.go
@@ -430,8 +429,6 @@ curl -X DELETE http://localhost:8082/api/students/1
 
 ## 🗺️ Roadmap
 
-See [IMPROVEMENTS.md](IMPROVEMENTS.md) for detailed enhancement plans.
-
 ### Phase 1 - Security & Stability
 - [ ] Fix XSS vulnerabilities
 - [ ] Improve error handling
@@ -496,14 +493,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 If you have any questions or need help, please:
 - Open an issue on GitHub
 - Check existing issues for solutions
-- Review the [IMPROVEMENTS.md](IMPROVEMENTS.md) for known limitations
-
 ---
 
 <div align="center">
 
-**⭐ Star this repo if you find it helpful!**
-
-Made with ❤️ using Go
+Made with ❤️ by Flack
 
 </div>
