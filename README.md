@@ -6,6 +6,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
 ![Coverage](https://img.shields.io/badge/coverage-0%25-red?style=for-the-badge)
+![Security](https://img.shields.io/badge/XSS_Protection-bluemonday-green?style=for-the-badge)
 
 A lightweight, RESTful API for managing student records built with Go and SQLite.
 
@@ -34,6 +35,8 @@ A lightweight, RESTful API for managing student records built with Go and SQLite
 - ✅ **CRUD Operations** - Create, Read, Update, Delete student records
 - ✅ **RESTful Design** - Clean and intuitive API endpoints
 - ✅ **Input Validation** - Request validation using go-playground/validator
+- ✅ **Input Sanitization** - XSS protection using bluemonday
+- ✅ **SQL Injection Protection** - Parameterized queries with prepared statements
 - ✅ **Graceful Shutdown** - Proper signal handling and cleanup
 - ✅ **Structured Logging** - JSON-based logging with slog
 - ✅ **Configuration Management** - YAML-based config with environment overrides
@@ -48,6 +51,7 @@ A lightweight, RESTful API for managing student records built with Go and SQLite
 | **Database** | SQLite 3 |
 | **Router** | net/http (stdlib) |
 | **Validation** | go-playground/validator/v10 |
+| **Sanitization** | bluemonday |
 | **Config** | cleanenv |
 | **Logging** | log/slog |
 
@@ -61,10 +65,15 @@ Students-API/
 ├── config/
 │   └── local.yaml               # Configuration file
 ├── internal/
+│   ├── app/
+│   │   ├── dependencies.go      # Dependency injection
+│   │   └── server.go            # Server lifecycle
 │   ├── config/
 │   │   └── config.go            # Config loader
 │   ├── http/
 │   │   └── handlers/
+│   │       ├── router/
+│   │       │   └── router.go    # Route definitions
 │   │       └── student/
 │   │           └── student.go   # HTTP handlers
 │   ├── storage/
@@ -74,8 +83,10 @@ Students-API/
 │   ├── types/
 │   │   └── types.go             # Domain models
 │   └── utils/
-│       └── response/
-│           └── response.go      # Response helpers
+│       ├── response/
+│       │   └── response.go      # Response helpers
+│       └── sanitize/
+│           └── sanitize.go      # Input sanitization
 ├── storage/
 │   └── storage.db               # SQLite database file
 ├── go.mod
@@ -88,6 +99,8 @@ Students-API/
 ```
 ┌─────────────────────────────────────┐
 │         HTTP Handlers               │  ← Request/Response handling
+├─────────────────────────────────────┤
+│    Validation & Sanitization        │  ← Security layer
 ├─────────────────────────────────────┤
 │         Storage Interface           │  ← Abstraction layer
 ├─────────────────────────────────────┤
@@ -305,9 +318,9 @@ DELETE /api/students/{id}
 
 | Field | Type | Required | Validation |
 |-------|------|----------|------------|
-| name | string | ✅ | Must not be empty |
-| email | string | ✅ | Must not be empty |
-| age | integer | ✅ | Must be provided |
+| name | string | ✅ | Required, 2-50 chars, XSS sanitized |
+| email | string | ✅ | Required, valid email format, XSS sanitized |
+| age | integer | ✅ | Required, 1-120 |
 
 ## 🏛️ Architecture
 
@@ -323,15 +336,19 @@ DELETE /api/students/{id}
 ```
 HTTP Request
     ↓
-Handler (Validation)
+Handler (JSON Decode)
+    ↓
+Validation (go-playground/validator)
+    ↓
+Sanitization (bluemonday)
     ↓
 Storage Interface
     ↓
-SQLite Implementation
+SQLite Implementation (Prepared Statements)
     ↓
 Database
     ↓
-Response
+Response (JSON Encode)
 ```
 
 ### Key Components
@@ -356,8 +373,14 @@ Response
 - Data structures
 
 #### 5. Utils (`internal/utils/`)
-- Response helpers
+- Response helpers (JSON encoding, error formatting)
+- Input sanitization (XSS protection with bluemonday)
 - Common utilities
+
+#### 6. App (`internal/app/`)
+- Application initialization
+- Dependency injection
+- Server lifecycle management
 
 ## 💻 Development
 
@@ -428,11 +451,12 @@ curl -X DELETE http://localhost:8082/api/students/1
 
 ## 🗺️ Roadmap
 
-### Phase 1 - Security & Stability
-- [ ] Fix XSS vulnerabilities
+### Phase 1 - Security & Stability ✅
+- [x] Fix XSS vulnerabilities (bluemonday implemented)
+- [x] Input sanitization (name, email, ID parameters)
+- [x] SQL injection protection (prepared statements)
 - [ ] Improve error handling
 - [ ] Add database connection pooling
-- [ ] Input sanitization
 
 ### Phase 2 - Features
 - [ ] Pagination and filtering
@@ -485,6 +509,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [cleanenv](https://github.com/ilyakaznacheev/cleanenv) - Configuration management
 - [validator](https://github.com/go-playground/validator) - Input validation
+- [bluemonday](https://github.com/microcosm-cc/bluemonday) - HTML sanitization and XSS protection
 - [go-sqlite3](https://github.com/mattn/go-sqlite3) - SQLite driver
 
 ## 📞 Support

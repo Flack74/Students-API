@@ -50,3 +50,4 @@ config/*.yaml
 !config/example.yaml
 
 IMPROVEMENTS.md
+SECURITY.md
