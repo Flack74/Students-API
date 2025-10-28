@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/Flack74/Students-API/internal/config"
+	appErrors "github.com/Flack74/Students-API/internal/errors"
 	"github.com/Flack74/Students-API/internal/types"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -41,22 +42,20 @@ func New(cfg *config.Config) (*Sqlite, error) {
 }
 
 func (s *Sqlite) CreateStudent(name string, email string, age int) (int64, error) {
-
 	stmt, err := s.Db.Prepare("INSERT INTO students (name, email, age) VALUES (?, ?, ?)")
 	if err != nil {
-		return 0, err
+		return 0, appErrors.NewDatabaseError("failed to prepare insert statement", err)
 	}
-
 	defer stmt.Close()
 
 	result, err := stmt.Exec(name, email, age)
 	if err != nil {
-		return 0, err
+		return 0, appErrors.NewDatabaseError("failed to insert student", err)
 	}
 
 	lastId, err := result.LastInsertId()
 	if err != nil {
-		return 0, err
+		return 0, appErrors.NewDatabaseError("failed to get last insert id", err)
 	}
 
 	return lastId, nil
@@ -65,19 +64,17 @@ func (s *Sqlite) CreateStudent(name string, email string, age int) (int64, error
 func (s *Sqlite) GetStudentById(id int64) (types.Student, error) {
 	stmt, err := s.Db.Prepare("SELECT * FROM students WHERE id = ? LIMIT 1")
 	if err != nil {
-		return types.Student{}, err
+		return types.Student{}, appErrors.NewDatabaseError("failed to prepare select statement", err)
 	}
-
 	defer stmt.Close()
 
 	var student types.Student
-
 	err = stmt.QueryRow(id).Scan(&student.Id, &student.Name, &student.Email, &student.Age)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return types.Student{}, fmt.Errorf("no student found with id %s", fmt.Sprint(id))
+			return types.Student{}, appErrors.NewNotFoundError(fmt.Sprintf("student with id %d not found", id))
 		}
-		return types.Student{}, fmt.Errorf("query error: %w", err)
+		return types.Student{}, appErrors.NewDatabaseError("failed to query student", err)
 	}
 
 	return student, nil
@@ -86,29 +83,28 @@ func (s *Sqlite) GetStudentById(id int64) (types.Student, error) {
 func (s *Sqlite) GetStudents() ([]types.Student, error) {
 	stmt, err := s.Db.Prepare("SELECT id, name, email, age FROM students")
 	if err != nil {
-		return nil, err
+		return nil, appErrors.NewDatabaseError("failed to prepare select statement", err)
 	}
-
 	defer stmt.Close()
 
 	rows, err := stmt.Query()
 	if err != nil {
-		return nil, err
+		return nil, appErrors.NewDatabaseError("failed to query students", err)
 	}
-
 	defer rows.Close()
 
 	var students []types.Student
-
 	for rows.Next() {
 		var student types.Student
-
 		err := rows.Scan(&student.Id, &student.Name, &student.Email, &student.Age)
 		if err != nil {
-			return nil, err
+			return nil, appErrors.NewDatabaseError("failed to scan student row", err)
 		}
-
 		students = append(students, student)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, appErrors.NewDatabaseError("error iterating rows", err)
 	}
 
 	return students, nil
@@ -117,47 +113,49 @@ func (s *Sqlite) GetStudents() ([]types.Student, error) {
 func (s *Sqlite) DeleteStudentById(id int64) error {
 	stmt, err := s.Db.Prepare("DELETE FROM students WHERE id = ?")
 	if err != nil {
-		return err
+		return appErrors.NewDatabaseError("failed to prepare delete statement", err)
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(id)
+	if err != nil {
+		return appErrors.NewDatabaseError("failed to delete student", err)
+	}
 
 	affected, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return appErrors.NewDatabaseError("failed to get affected rows", err)
 	}
+
 	if affected == 0 {
-		return sql.ErrNoRows
+		return appErrors.NewNotFoundError(fmt.Sprintf("student with id %d not found", id))
 	}
+
 	return nil
 }
 
 func (s *Sqlite) UpdateStudentById(id int64, name string, email string, age int) error {
 	stmt, err := s.Db.Prepare("UPDATE students SET name = ?, email = ?, age = ? WHERE id = ?")
 	if err != nil {
-		return err
+		return appErrors.NewDatabaseError("failed to prepare update statement", err)
 	}
-
 	defer stmt.Close()
 
 	res, err := stmt.Exec(name, email, age, id)
 	if err != nil {
-		return err
+		return appErrors.NewDatabaseError("failed to update student", err)
 	}
 
-	// Check the number of affected rows
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return appErrors.NewDatabaseError("failed to get affected rows", err)
 	}
 
 	if rowsAffected == 0 {
-		return sql.ErrNoRows
+		return appErrors.NewNotFoundError(fmt.Sprintf("student with id %d not found", id))
 	}
 
-	slog.Info("Rows affected", "count", rowsAffected)
-
+	slog.Info("student updated", "id", id, "rows_affected", rowsAffected)
 	return nil
 }
 

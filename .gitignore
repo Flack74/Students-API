@@ -51,3 +51,4 @@ config/*.yaml
 
 IMPROVEMENTS.md
 SECURITY.md
+ERROR_HANDLING.md

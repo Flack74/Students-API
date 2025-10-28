@@ -70,6 +70,8 @@ Students-API/
 │   │   └── server.go            # Server lifecycle
 │   ├── config/
 │   │   └── config.go            # Config loader
+│   ├── errors/
+│   │   └── errors.go            # Custom error types
 │   ├── http/
 │   │   └── handlers/
 │   │       ├── router/
@@ -306,11 +308,27 @@ DELETE /api/students/{id}
 }
 ```
 
-#### General Error (500 Internal Server Error)
+#### Not Found (404 Not Found)
 ```json
 {
   "status": "Error",
-  "error": "database connection failed"
+  "error": "student with id 123 not found"
+}
+```
+
+#### Invalid Input (400 Bad Request)
+```json
+{
+  "status": "Error",
+  "error": "invalid student id"
+}
+```
+
+#### Database Error (500 Internal Server Error)
+```json
+{
+  "status": "Error",
+  "error": "database operation failed"
 }
 ```
 
@@ -455,7 +473,7 @@ curl -X DELETE http://localhost:8082/api/students/1
 - [x] Fix XSS vulnerabilities (bluemonday implemented)
 - [x] Input sanitization (name, email, ID parameters)
 - [x] SQL injection protection (prepared statements)
-- [ ] Improve error handling
+- [x] Improve error handling (custom error types, centralized handling)
 - [ ] Add database connection pooling
 
 ### Phase 2 - Features

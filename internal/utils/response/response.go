@@ -2,12 +2,12 @@ package response
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
+	appErrors "github.com/Flack74/Students-API/internal/errors"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -22,25 +22,54 @@ const (
 )
 
 func WriteJson(w http.ResponseWriter, status int, data any) error {
-
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("X-XSS-Protection", "1; mode=block")
 	w.WriteHeader(status)
 
 	return json.NewEncoder(w).Encode(data)
 }
 
 func GeneralError(err error) Response {
-	if errors.Is(err, io.EOF) {
-		return Response{
-			Status: StatusError,
-			Error:  err.Error(),
-		}
-	}
 	return Response{
 		Status: StatusError,
 		Error:  err.Error(),
 	}
+}
+
+func HandleError(w http.ResponseWriter, err error) {
+	var appErr *appErrors.AppError
+	if e, ok := err.(*appErrors.AppError); ok {
+		appErr = e
+	} else {
+		appErr = appErrors.NewInternalError("an unexpected error occurred", err)
+	}
+
+	slog.Error("request error", "type", appErr.Type, "message", appErr.Message, "error", appErr.Err)
+
+	var status int
+	var message string
+
+	switch appErr.Type {
+	case appErrors.ErrNotFound:
+		status = http.StatusNotFound
+		message = appErr.Message
+	case appErrors.ErrInvalidInput:
+		status = http.StatusBadRequest
+		message = appErr.Message
+	case appErrors.ErrDatabase:
+		status = http.StatusInternalServerError
+		message = "database operation failed"
+	default:
+		status = http.StatusInternalServerError
+		message = "an unexpected error occurred"
+	}
+
+	WriteJson(w, status, Response{
+		Status: StatusError,
+		Error:  message,
+	})
 }
 
 func ValidationError(errs validator.ValidationErrors) Response {
