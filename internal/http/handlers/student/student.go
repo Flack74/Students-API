@@ -7,13 +7,15 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/Flack74/Students-API/internal/storage"
 	"github.com/Flack74/Students-API/internal/types"
 	"github.com/Flack74/Students-API/internal/utils/response"
+	"github.com/Flack74/Students-API/internal/utils/sanitize"
 	"github.com/go-playground/validator/v10"
 )
+
+var validate = validator.New()
 
 func New(storage storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -33,21 +35,22 @@ func New(storage storage.Storage) http.HandlerFunc {
 		}
 
 		// request validation
-		if err := validator.New().Struct(student); err != nil {
+		if err := validate.Struct(student); err != nil {
 			validateErrs := err.(validator.ValidationErrors) // Type casting
 			response.WriteJson(w, http.StatusBadRequest, response.ValidationError(validateErrs))
 			return
 		}
 
-		lastId, err := storage.CreateStudent(student.Name, student.Email, student.Age)
+		// sanatize user input before saving
+		student.Name, student.Email = sanitize.SanitizeJsonItems(student.Name, student.Email)
 
-		slog.Info("user created successfully", slog.String("userId", fmt.Sprint(lastId)))
+		lastId, err := storage.CreateStudent(student.Name, student.Email, student.Age)
 
 		if err != nil {
 			response.WriteJson(w, http.StatusInternalServerError, err)
 			return
 		}
-
+		slog.Info("user created successfully", slog.String("userId", fmt.Sprint(lastId)))
 		response.WriteJson(w, http.StatusCreated, map[string]int64{"id": lastId})
 	}
 }
@@ -55,15 +58,17 @@ func New(storage storage.Storage) http.HandlerFunc {
 func GetById(storage storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
+
+		// sanatize the id
+		sanId, err := sanitize.SanitizeAndParseInt(id)
 		slog.Info("getting a student", slog.String("id", id))
 
-		intId, err := strconv.ParseInt(id, 10, 64)
 		if err != nil {
 			response.WriteJson(w, http.StatusBadRequest, response.GeneralError(err))
 			return
 		}
 
-		student, err := storage.GetStudentById(intId)
+		student, err := storage.GetStudentById(sanId)
 
 		if err != nil {
 			slog.Error("error getting user", slog.String("id", id))
@@ -92,18 +97,20 @@ func GetList(storage storage.Storage) http.HandlerFunc {
 func DeleteById(storage storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		slog.Info("getting a student", slog.String("id", id))
+		slog.Info("deleting a student", slog.String("id", id))
 
-		intId, err := strconv.ParseInt(id, 10, 64)
+		// sanatize the id
+		sanId, err := sanitize.SanitizeAndParseInt(id)
+
 		if err != nil {
 			response.WriteJson(w, http.StatusBadRequest, response.GeneralError(err))
 			return
 		}
 
-		err = storage.DeleteStudentById(intId)
+		err = storage.DeleteStudentById(sanId)
 
 		if err != nil {
-			slog.Error("error getting user", slog.String("id", id))
+			slog.Error("error deleting the student", slog.String("id", id))
 			response.WriteJson(w, http.StatusInternalServerError, response.GeneralError(err))
 			return
 		}
@@ -121,7 +128,9 @@ func UpdateById(storage storage.Storage) http.HandlerFunc {
 		id := r.PathValue("id")
 		slog.Info("getting a student", slog.String("id", id))
 
-		intId, err := strconv.ParseInt(id, 10, 64)
+		// sanatize the id
+		sanId, err := sanitize.SanitizeAndParseInt(id)
+
 		if err != nil {
 			response.WriteJson(w, http.StatusBadRequest, response.GeneralError(err))
 			return
@@ -141,19 +150,21 @@ func UpdateById(storage storage.Storage) http.HandlerFunc {
 		}
 
 		// request validation
-		if err := validator.New().Struct(student); err != nil {
+		if err := validate.Struct(student); err != nil {
 			validateErrs := err.(validator.ValidationErrors) // Type casting
 			response.WriteJson(w, http.StatusBadRequest, response.ValidationError(validateErrs))
 			return
 		}
 
-		err = storage.UpdateStudentById(intId, student.Name, student.Email, student.Age)
+		// sanatize user input before saving
+		student.Name, student.Email = sanitize.SanitizeJsonItems(student.Name, student.Email)
+
+		err = storage.UpdateStudentById(sanId, student.Name, student.Email, student.Age)
 
 		if err != nil {
 			response.WriteJson(w, http.StatusInternalServerError, err)
 			return
 		}
-
-		response.WriteJson(w, http.StatusCreated, map[string]string{"message": "student upated successfully"})
+		response.WriteJson(w, http.StatusOK, map[string]string{"message": "student upated successfully"})
 	}
 }

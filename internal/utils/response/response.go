@@ -23,7 +23,8 @@ const (
 
 func WriteJson(w http.ResponseWriter, status int, data any) error {
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 
 	return json.NewEncoder(w).Encode(data)

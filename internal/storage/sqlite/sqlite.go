@@ -14,6 +14,10 @@ type Sqlite struct {
 	Db *sql.DB
 }
 
+func (s *Sqlite) Close() error {
+	return s.Db.Close()
+}
+
 func New(cfg *config.Config) (*Sqlite, error) {
 	db, err := sql.Open("sqlite3", cfg.StoragePath)
 	if err != nil {
@@ -146,6 +150,10 @@ func (s *Sqlite) UpdateStudentById(id int64, name string, email string, age int)
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
 	}
 
 	slog.Info("Rows affected", "count", rowsAffected)
